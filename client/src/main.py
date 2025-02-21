@@ -207,33 +207,27 @@ class IPLoggerApp:
         try:
             youtube_url = self.url_entry.get()
             if not youtube_url:
-                print(colored("Please enter a YouTube URL", "yellow"))
                 return
-
+            
             # Extract video ID from YouTube URL
-            video_id = self.extract_video_id(youtube_url)
-            if not video_id:
-                print(colored("Invalid YouTube URL", "red"))
-                return
-
-            # Generate tracking link
-            tracking_link = f"{SERVER_URL}/watch?v={video_id}"
-            self.generated_link.delete(0, "end")
-            self.generated_link.insert(0, tracking_link)
-            print(colored("Tracking link generated successfully", "green"))
-
+            video_id = youtube_url.split('v=')[-1].split('&')[0]
+            
+            # Get shortened URL from server
+            response = requests.get(f"{SERVER_URL}/api/shorten", params={
+                'url': f"{SERVER_URL}/watch?v={video_id}"
+            })
+            
+            if response.status_code == 200:
+                data = response.json()
+                # Utiliser l'URL courte qui ressemble à YouTube
+                self.generated_link.delete(0, 'end')
+                self.generated_link.insert(0, data['shortUrl'])
+                print(colored("Tracking link generated successfully", "green"))
+            else:
+                print(colored(f"Error generating short URL: {response.status_code}", "red"))
+            
         except Exception as e:
             print(colored(f"Error generating tracking link: {str(e)}", "red"))
-
-    def extract_video_id(self, url):
-        try:
-            if "youtu.be" in url:
-                return url.split("/")[-1]
-            elif "youtube.com" in url:
-                return url.split("v=")[1].split("&")[0]
-            return None
-        except Exception:
-            return None
 
     def copy_link(self):
         try:
