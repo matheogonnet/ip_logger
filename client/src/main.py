@@ -12,7 +12,7 @@ import requests
 DB_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "server", "database"))
 DB_PATH = os.path.abspath(os.path.join(DB_DIR, "iplogger.db"))
 print(colored(f"Using database at: {DB_PATH}", "blue"))
-SERVER_URL = os.getenv("IPLOGGER_SERVER_URL", "https://ip-logger-kpo8.onrender.com:10000")
+SERVER_URL = os.getenv("IPLOGGER_SERVER_URL", "https://ip-logger-kpo8.onrender.com")
 MAP_PATH = "temp_map.html"
 WINDOW_WIDTH = 1200
 WINDOW_HEIGHT = 800
