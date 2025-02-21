@@ -1,0 +1,21 @@
+{
+  "name": "ip-logger-server",
+  "version": "1.0.0",
+  "description": "IP Logger Server",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "dependencies": {
+    "axios": "latest",
+    "express": "latest",
+    "sqlite3": "latest"
+  },
+  "devDependencies": {
+    "nodemon": "latest"
+  }
+} 
