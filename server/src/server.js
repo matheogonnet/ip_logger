@@ -5,6 +5,7 @@ const useragent = require('useragent');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const SERVER_URL = process.env.SERVER_URL || 'https://ip-logger-kpo8.onrender.com';
 
 // Store IPs in memory
 let trackedIPs = [];
@@ -24,24 +25,35 @@ function generateYouTubeId() {
 
 // Route pour créer un lien court
 app.get('/api/shorten', (req, res) => {
-    const originalUrl = req.query.url;
-    if (!originalUrl) {
-        return res.status(400).json({ error: 'URL required' });
-    }
+    try {
+        const originalUrl = req.query.url;
+        if (!originalUrl) {
+            return res.status(400).json({ error: 'URL required' });
+        }
 
-    const shortId = generateYouTubeId();
-    urlMappings.set(shortId, originalUrl);
-    
-    // Limiter la taille du Map
-    if (urlMappings.size > 1000) {
-        const firstKey = urlMappings.keys().next().value;
-        urlMappings.delete(firstKey);
-    }
+        const shortId = generateYouTubeId();
+        urlMappings.set(shortId, originalUrl);
+        
+        // Limiter la taille du Map
+        if (urlMappings.size > 1000) {
+            const firstKey = urlMappings.keys().next().value;
+            urlMappings.delete(firstKey);
+        }
 
-    res.json({ 
-        shortUrl: `youtu.be/${shortId}`,
-        fullUrl: `${SERVER_URL}/v/${shortId}`
-    });
+        // Construire les URLs avec le domaine du serveur
+        const shortUrl = `https://youtu.be/${shortId}`;
+        const fullUrl = `${SERVER_URL}/v/${shortId}`;
+
+        console.log('\x1b[32m%s\x1b[0m', `Generated short URL: ${shortUrl} for: ${originalUrl}`);
+        
+        res.json({ 
+            shortUrl: shortUrl,
+            fullUrl: fullUrl
+        });
+    } catch (error) {
+        console.error('\x1b[31m%s\x1b[0m', `Error generating short URL: ${error}`);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 // Route pour rediriger les liens courts

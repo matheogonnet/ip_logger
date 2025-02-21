@@ -207,24 +207,34 @@ class IPLoggerApp:
         try:
             youtube_url = self.url_entry.get()
             if not youtube_url:
+                print(colored("Please enter a YouTube URL", "yellow"))
                 return
             
             # Extract video ID from YouTube URL
-            video_id = youtube_url.split('v=')[-1].split('&')[0]
+            try:
+                video_id = youtube_url.split('v=')[-1].split('&')[0]
+            except:
+                print(colored("Invalid YouTube URL format", "red"))
+                return
             
             # Get shortened URL from server
-            response = requests.get(f"{SERVER_URL}/api/shorten", params={
-                'url': f"{SERVER_URL}/watch?v={video_id}"
-            })
-            
-            if response.status_code == 200:
-                data = response.json()
-                # Utiliser l'URL courte qui ressemble à YouTube
-                self.generated_link.delete(0, 'end')
-                self.generated_link.insert(0, data['shortUrl'])
-                print(colored("Tracking link generated successfully", "green"))
-            else:
-                print(colored(f"Error generating short URL: {response.status_code}", "red"))
+            try:
+                response = requests.get(f"{SERVER_URL}/api/shorten", params={
+                    'url': f"{SERVER_URL}/watch?v={video_id}"
+                })
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    # Utiliser l'URL courte qui ressemble à YouTube
+                    self.generated_link.delete(0, 'end')
+                    self.generated_link.insert(0, data['shortUrl'])
+                    print(colored("Tracking link generated successfully", "green"))
+                    print(colored(f"Short URL: {data['shortUrl']}", "blue"))
+                else:
+                    print(colored(f"Error generating short URL: {response.status_code}", "red"))
+                    print(colored(f"Error details: {response.text}", "red"))
+            except requests.exceptions.RequestException as e:
+                print(colored(f"Network error while generating short URL: {str(e)}", "red"))
             
         except Exception as e:
             print(colored(f"Error generating tracking link: {str(e)}", "red"))
