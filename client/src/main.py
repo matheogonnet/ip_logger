@@ -12,7 +12,7 @@ import requests
 DB_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "server", "database"))
 DB_PATH = os.path.abspath(os.path.join(DB_DIR, "iplogger.db"))
 print(colored(f"Using database at: {DB_PATH}", "blue"))
-SERVER_URL = os.getenv("IPLOGGER_SERVER_URL", "https://ip-logger.onrender.com")
+SERVER_URL = os.getenv("IPLOGGER_SERVER_URL", "https://ip-logger-kpo8.onrender.com")
 MAP_PATH = "temp_map.html"
 WINDOW_WIDTH = 1200
 WINDOW_HEIGHT = 800
@@ -160,17 +160,14 @@ class IPLoggerApp:
     def update_history(self):
         try:
             self.history_text.delete("1.0", "end")
-            with sqlite3.connect(DB_PATH) as conn:
-                cursor = conn.cursor()
-                cursor.execute("""
-                    SELECT ip, country, city, timestamp 
-                    FROM tracked_ips 
-                    ORDER BY timestamp DESC 
-                    LIMIT 10
-                """)
-                for row in cursor.fetchall():
-                    entry = f"IP: {row[0]} | Location: {row[2]}, {row[1]} | Time: {row[3]}\n"
-                    self.history_text.insert("end", entry)
+            response = requests.get(f"{SERVER_URL}/api/tracked-ips")
+            if response.status_code == 200:
+                data = response.json()[:10]  # Get only last 10 entries
+                for entry in data:
+                    history_text = f"IP: {entry['ip']} | Location: {entry['city']}, {entry['country']} | Time: {entry['timestamp']}\n"
+                    self.history_text.insert("end", history_text)
+            else:
+                print(colored(f"API error: {response.status_code}", "red"))
         except Exception as e:
             print(colored(f"Error updating history: {str(e)}", "red"))
 
@@ -251,6 +248,7 @@ class IPLoggerApp:
 
     def update_map(self):
         try:
+            print(colored("Starting map update...", "blue"))
             # Create base map
             m = folium.Map(
                 location=[39.03, -77.5],
@@ -258,23 +256,26 @@ class IPLoggerApp:
                 tiles="cartodbdark_matter"
             )
 
-            # Get data from database
-            with sqlite3.connect(DB_PATH) as conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT * FROM tracked_ips ORDER BY timestamp DESC")
-                rows = cursor.fetchall()
-                print(colored(f"Found {len(rows)} entries in database at {DB_PATH}", "green"))
+            # Get data from API
+            try:
+                response = requests.get(f"{SERVER_URL}/api/tracked-ips")
+                if response.status_code == 200:
+                    data = response.json()
+                    print(colored(f"Found {len(data)} entries from API", "green"))
 
-                # Add markers for each entry
-                for row in rows:
-                    print(colored(f"Adding marker for: {row}", "blue"))
-                    folium.Marker(
-                        location=[row[4], row[5]],  # latitude, longitude
-                        popup=f"IP: {row[1]}<br>Location: {row[3]}, {row[2]}<br>Time: {row[6]}",
-                        icon=folium.Icon(color='red')
-                    ).add_to(m)
+                    for row in data:
+                        print(colored(f"Adding marker for: {row}", "blue"))
+                        folium.Marker(
+                            location=[row['latitude'], row['longitude']],
+                            popup=f"IP: {row['ip']}<br>Location: {row['city']}, {row['country']}<br>Time: {row['timestamp']}",
+                            icon=folium.Icon(color='red')
+                        ).add_to(m)
+                else:
+                    print(colored(f"API error: {response.status_code}", "red"))
+            except Exception as e:
+                print(colored(f"Error fetching data from API: {str(e)}", "red"))
 
-            # Save and open map
+            # Save map
             m.save(MAP_PATH)
             print(colored("Map updated with all markers", "green"))
 
@@ -285,15 +286,16 @@ class IPLoggerApp:
 
     def check_database(self):
         try:
-            with sqlite3.connect(DB_PATH) as conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT * FROM tracked_ips")
-                rows = cursor.fetchall()
-                print(colored("\nDatabase contents:", "blue"))
-                for row in rows:
-                    print(colored(f"Entry: {row}", "green"))
+            response = requests.get(f"{SERVER_URL}/api/tracked-ips")
+            if response.status_code == 200:
+                data = response.json()
+                print(colored("\nAPI Data contents:", "blue"))
+                for entry in data:
+                    print(colored(f"Entry: {entry}", "green"))
+            else:
+                print(colored(f"API error: {response.status_code}", "red"))
         except Exception as e:
-            print(colored(f"Error checking database: {str(e)}", "red"))
+            print(colored(f"Error checking API data: {str(e)}", "red"))
 
     def run(self):
         try:

@@ -120,6 +120,18 @@ app.get('/check-db', (req, res) => {
     });
 });
 
+// Ajoutez cette route pour l'API
+app.get('/api/tracked-ips', (req, res) => {
+    db.all("SELECT * FROM tracked_ips ORDER BY timestamp DESC", [], (err, rows) => {
+        if (err) {
+            console.error('\x1b[31m%s\x1b[0m', `Database query error: ${err}`);
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json(rows);
+    });
+});
+
 // Start server
 app.listen(PORT, () => {
     console.log('\x1b[32m%s\x1b[0m', `Server running on port ${PORT}`);
