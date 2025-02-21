@@ -25,7 +25,7 @@
             <meta name="viewport" content="width=device-width,
                 initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
             <style>
-                #map_6b64a384fca1c9116ab909794df0ea4f {
+                #map_3356260334f5443f5164ae7596077208 {
                     position: relative;
                     width: 100.0%;
                     height: 100.0%;
@@ -39,14 +39,14 @@
 <body>
     
     
-            <div class="folium-map" id="map_6b64a384fca1c9116ab909794df0ea4f" ></div>
+            <div class="folium-map" id="map_3356260334f5443f5164ae7596077208" ></div>
         
 </body>
 <script>
     
     
-            var map_6b64a384fca1c9116ab909794df0ea4f = L.map(
-                "map_6b64a384fca1c9116ab909794df0ea4f",
+            var map_3356260334f5443f5164ae7596077208 = L.map(
+                "map_3356260334f5443f5164ae7596077208",
                 {
                     center: [39.03, -77.5],
                     crs: L.CRS.EPSG3857,
@@ -63,7 +63,7 @@
 
         
     
-            var tile_layer_18e84ba4cd56718c907c328928e3997d = L.tileLayer(
+            var tile_layer_0c598647f5b61a4a6e4e728e60fc7737 = L.tileLayer(
                 "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
                 {
   "minZoom": 0,
@@ -80,7 +80,43 @@
             );
         
     
-            tile_layer_18e84ba4cd56718c907c328928e3997d.addTo(map_6b64a384fca1c9116ab909794df0ea4f);
+            tile_layer_0c598647f5b61a4a6e4e728e60fc7737.addTo(map_3356260334f5443f5164ae7596077208);
         
+    
+            var marker_25b7649391da25718f70f14aa02341fa = L.marker(
+                [48.8558, 2.3494],
+                {
+}
+            ).addTo(map_3356260334f5443f5164ae7596077208);
+        
+    
+            var icon_28e6befab25adeb83dfa2150f5d9f004 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+            marker_25b7649391da25718f70f14aa02341fa.setIcon(icon_28e6befab25adeb83dfa2150f5d9f004);
+        
+    
+        var popup_d006befa62d6000c7aac54c13fb0a5d8 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_91f830bd26fdf4c045049bb69d20c118 = $(`<div id="html_91f830bd26fdf4c045049bb69d20c118" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; min-width: 200px;">             <h3 style="color: #2b2b2b; margin: 0 0 10px 0; border-bottom: 2px solid #4a90e2;">Visitor Details</h3>                          <div style="margin-bottom: 10px;">                 <strong style="color: #4a90e2;">📍 Location</strong><br>                 Paris, France<br>                 <span style="color: #666;">(48.8558, 2.3494)</span>             </div>              <div style="margin-bottom: 10px;">                 <strong style="color: #4a90e2;">🌐 Network</strong><br>                 IP: 77.136.66.68<br>                 ISP: Societe Francaise Du Radiotelephone - SFR SA<br>                 Organization: <br>                 AS: AS15557 Societe Francaise Du Radiotelephone - SFR SA             </div>              <div style="margin-bottom: 10px;">                 <strong style="color: #4a90e2;">💻 Device</strong><br>                 Browser: Chrome 132.0.0<br>                 OS: Windows 10.0.0<br>                 Device: Other<br>                 Type: Desktop             </div>              <div style="margin-bottom: 5px;">                 <strong style="color: #4a90e2;">⏰ Other</strong><br>                 Time Zone: Europe/Paris<br>                 Visit Time: 21/02/2025 14:33:15             </div>         </div>         </div>`)[0];
+                popup_d006befa62d6000c7aac54c13fb0a5d8.setContent(html_91f830bd26fdf4c045049bb69d20c118);
+            
+        
+
+        marker_25b7649391da25718f70f14aa02341fa.bindPopup(popup_d006befa62d6000c7aac54c13fb0a5d8)
+        ;
+
+        
+    
 </script>
 </html>
