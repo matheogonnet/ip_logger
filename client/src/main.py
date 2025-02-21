@@ -210,14 +210,12 @@ class IPLoggerApp:
                 print(colored("Please enter a YouTube URL", "yellow"))
                 return
             
-            # Extract video ID from YouTube URL
             try:
                 video_id = youtube_url.split('v=')[-1].split('&')[0]
             except:
                 print(colored("Invalid YouTube URL format", "red"))
                 return
             
-            # Get shortened URL from server
             try:
                 response = requests.get(f"{SERVER_URL}/api/shorten", params={
                     'url': f"{SERVER_URL}/watch?v={video_id}"
@@ -225,11 +223,14 @@ class IPLoggerApp:
                 
                 if response.status_code == 200:
                     data = response.json()
-                    # Utiliser l'URL courte qui ressemble à YouTube
+                    # Afficher l'URL YouTube-like
                     self.generated_link.delete(0, 'end')
                     self.generated_link.insert(0, data['shortUrl'])
+                    # Mais copier l'URL de tracking
+                    self.tracking_url = data['trackingUrl']
                     print(colored("Tracking link generated successfully", "green"))
-                    print(colored(f"Short URL: {data['shortUrl']}", "blue"))
+                    print(colored(f"Display URL: {data['shortUrl']}", "blue"))
+                    print(colored(f"Tracking URL: {data['trackingUrl']}", "blue"))
                 else:
                     print(colored(f"Error generating short URL: {response.status_code}", "red"))
                     print(colored(f"Error details: {response.text}", "red"))
@@ -241,13 +242,13 @@ class IPLoggerApp:
 
     def copy_link(self):
         try:
-            link = self.generated_link.get()
-            if link:
+            # Copier l'URL de tracking au lieu de l'URL affichée
+            if hasattr(self, 'tracking_url'):
                 self.root.clipboard_clear()
-                self.root.clipboard_append(link)
-                print(colored("Link copied to clipboard", "green"))
+                self.root.clipboard_append(self.tracking_url)
+                print(colored("Tracking link copied to clipboard", "green"))
             else:
-                print(colored("No link to copy", "yellow"))
+                print(colored("No tracking link to copy", "yellow"))
         except Exception as e:
             print(colored(f"Error copying link: {str(e)}", "red"))
 
