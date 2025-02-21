@@ -120,16 +120,25 @@ app.get('/check-db', (req, res) => {
     });
 });
 
-// Ajoutez cette route pour l'API
+// Modifiez la route API pour ajouter plus de logs
 app.get('/api/tracked-ips', (req, res) => {
+    console.log('\x1b[36m%s\x1b[0m', `API request received from: ${req.ip}`);
+    
     db.all("SELECT * FROM tracked_ips ORDER BY timestamp DESC", [], (err, rows) => {
         if (err) {
             console.error('\x1b[31m%s\x1b[0m', `Database query error: ${err}`);
             res.status(500).json({ error: err.message });
             return;
         }
+        console.log('\x1b[32m%s\x1b[0m', `API: Found ${rows.length} entries in database`);
+        console.log('\x1b[32m%s\x1b[0m', `API: Sending data:`, rows);
         res.json(rows);
     });
+});
+
+// Ajoutez une route de test simple
+app.get('/api/test', (req, res) => {
+    res.json({ status: 'ok', message: 'API is working' });
 });
 
 // Start server

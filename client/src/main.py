@@ -12,7 +12,7 @@ import requests
 DB_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "server", "database"))
 DB_PATH = os.path.abspath(os.path.join(DB_DIR, "iplogger.db"))
 print(colored(f"Using database at: {DB_PATH}", "blue"))
-SERVER_URL = os.getenv("IPLOGGER_SERVER_URL", "https://ip-logger-kpo8.onrender.com")
+SERVER_URL = os.getenv("IPLOGGER_SERVER_URL", "https://ip-logger-kpo8.onrender.com:10000")
 MAP_PATH = "temp_map.html"
 WINDOW_WIDTH = 1200
 WINDOW_HEIGHT = 800
@@ -248,7 +248,13 @@ class IPLoggerApp:
 
     def update_map(self):
         try:
-            print(colored("Starting map update...", "blue"))
+            print(colored(f"Trying to fetch data from: {SERVER_URL}/api/tracked-ips", "blue"))
+            
+            # Test server connection first
+            if not self.check_server_connection():
+                print(colored("Server connection failed, cannot update map", "red"))
+                return
+
             # Create base map
             m = folium.Map(
                 location=[39.03, -77.5],
@@ -256,9 +262,12 @@ class IPLoggerApp:
                 tiles="cartodbdark_matter"
             )
 
-            # Get data from API
+            # Get data from API with error handling
             try:
                 response = requests.get(f"{SERVER_URL}/api/tracked-ips")
+                print(colored(f"API Response status: {response.status_code}", "blue"))
+                print(colored(f"API Response content: {response.text[:200]}...", "blue"))
+                
                 if response.status_code == 200:
                     data = response.json()
                     print(colored(f"Found {len(data)} entries from API", "green"))
@@ -272,8 +281,11 @@ class IPLoggerApp:
                         ).add_to(m)
                 else:
                     print(colored(f"API error: {response.status_code}", "red"))
+                    print(colored(f"Error response: {response.text}", "red"))
             except Exception as e:
                 print(colored(f"Error fetching data from API: {str(e)}", "red"))
+                import traceback
+                print(colored(traceback.format_exc(), "red"))
 
             # Save map
             m.save(MAP_PATH)
@@ -296,6 +308,19 @@ class IPLoggerApp:
                 print(colored(f"API error: {response.status_code}", "red"))
         except Exception as e:
             print(colored(f"Error checking API data: {str(e)}", "red"))
+
+    def check_server_connection(self):
+        try:
+            response = requests.get(f"{SERVER_URL}/api/test")
+            if response.status_code == 200:
+                print(colored("Server connection test successful", "green"))
+                return True
+            else:
+                print(colored(f"Server connection test failed: {response.status_code}", "red"))
+                return False
+        except Exception as e:
+            print(colored(f"Server connection error: {str(e)}", "red"))
+            return False
 
     def run(self):
         try:
