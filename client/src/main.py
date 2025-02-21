@@ -7,6 +7,7 @@ import webbrowser
 from PIL import Image
 import json
 import requests
+from datetime import datetime
 
 # Constants
 DB_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "server", "database"))
@@ -246,6 +247,46 @@ class IPLoggerApp:
         except Exception as e:
             print(colored(f"Error copying link: {str(e)}", "red"))
 
+    def create_marker_popup(self, ip_data):
+        """Crée un popup HTML formaté pour le marqueur"""
+        timestamp = datetime.fromisoformat(ip_data['timestamp']).strftime('%d/%m/%Y %H:%M:%S')
+        device = ip_data.get('deviceInfo', {})
+        
+        popup_html = f"""
+        <div style="font-family: Arial, sans-serif; min-width: 200px;">
+            <h3 style="color: #2b2b2b; margin: 0 0 10px 0; border-bottom: 2px solid #4a90e2;">Visitor Details</h3>
+            
+            <div style="margin-bottom: 10px;">
+                <strong style="color: #4a90e2;">📍 Location</strong><br>
+                {ip_data['city']}, {ip_data['country']}<br>
+                <span style="color: #666;">({ip_data['latitude']}, {ip_data['longitude']})</span>
+            </div>
+
+            <div style="margin-bottom: 10px;">
+                <strong style="color: #4a90e2;">🌐 Network</strong><br>
+                IP: {ip_data['ip']}<br>
+                ISP: {ip_data.get('isp', 'N/A')}<br>
+                Organization: {ip_data.get('org', 'N/A')}<br>
+                AS: {ip_data.get('as', 'N/A')}
+            </div>
+
+            <div style="margin-bottom: 10px;">
+                <strong style="color: #4a90e2;">💻 Device</strong><br>
+                Browser: {device.get('browser', 'N/A')} {device.get('browserVersion', '')}<br>
+                OS: {device.get('os', 'N/A')}<br>
+                Device: {device.get('device', 'N/A')}<br>
+                Type: {'Mobile' if device.get('isMobile') else 'Desktop'}
+            </div>
+
+            <div style="margin-bottom: 5px;">
+                <strong style="color: #4a90e2;">⏰ Other</strong><br>
+                Time Zone: {ip_data.get('timezone', 'N/A')}<br>
+                Visit Time: {timestamp}
+            </div>
+        </div>
+        """
+        return popup_html
+
     def update_map(self):
         try:
             print(colored(f"Trying to fetch data from: {SERVER_URL}/api/tracked-ips", "blue"))
@@ -274,10 +315,11 @@ class IPLoggerApp:
 
                     for row in data:
                         print(colored(f"Adding marker for: {row}", "blue"))
+                        popup_content = self.create_marker_popup(row)
                         folium.Marker(
                             location=[row['latitude'], row['longitude']],
-                            popup=f"IP: {row['ip']}<br>Location: {row['city']}, {row['country']}<br>Time: {row['timestamp']}",
-                            icon=folium.Icon(color='red')
+                            popup=folium.Popup(popup_content, max_width=300),
+                            icon=folium.Icon(color='red', icon='info-sign')
                         ).add_to(m)
                 else:
                     print(colored(f"API error: {response.status_code}", "red"))

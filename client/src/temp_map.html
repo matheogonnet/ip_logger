@@ -25,7 +25,7 @@
             <meta name="viewport" content="width=device-width,
                 initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
             <style>
-                #map_6ac9bc6799d2c5fbdb7918c3daa44d86 {
+                #map_835b4f0a7a481f6ff35539a18d6cfd59 {
                     position: relative;
                     width: 100.0%;
                     height: 100.0%;
@@ -39,14 +39,14 @@
 <body>
     
     
-            <div class="folium-map" id="map_6ac9bc6799d2c5fbdb7918c3daa44d86" ></div>
+            <div class="folium-map" id="map_835b4f0a7a481f6ff35539a18d6cfd59" ></div>
         
 </body>
 <script>
     
     
-            var map_6ac9bc6799d2c5fbdb7918c3daa44d86 = L.map(
-                "map_6ac9bc6799d2c5fbdb7918c3daa44d86",
+            var map_835b4f0a7a481f6ff35539a18d6cfd59 = L.map(
+                "map_835b4f0a7a481f6ff35539a18d6cfd59",
                 {
                     center: [39.03, -77.5],
                     crs: L.CRS.EPSG3857,
@@ -63,7 +63,7 @@
 
         
     
-            var tile_layer_d4ee23ff4a1cb37026e958acd4739d93 = L.tileLayer(
+            var tile_layer_10e0e7160f0ea8e7951ce911eda6e2c2 = L.tileLayer(
                 "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
                 {
   "minZoom": 0,
@@ -80,7 +80,43 @@
             );
         
     
-            tile_layer_d4ee23ff4a1cb37026e958acd4739d93.addTo(map_6ac9bc6799d2c5fbdb7918c3daa44d86);
+            tile_layer_10e0e7160f0ea8e7951ce911eda6e2c2.addTo(map_835b4f0a7a481f6ff35539a18d6cfd59);
         
+    
+            var marker_060623295140b3877131dea7790b9e00 = L.marker(
+                [48.8558, 2.3494],
+                {
+}
+            ).addTo(map_835b4f0a7a481f6ff35539a18d6cfd59);
+        
+    
+            var icon_e0b2720af8910f8f4f129d50fbe32b18 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+            marker_060623295140b3877131dea7790b9e00.setIcon(icon_e0b2720af8910f8f4f129d50fbe32b18);
+        
+    
+        var popup_80e4d0baef45a0cce6a2aa91e6e99222 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_39b069aff31a51a11f4bdf6627808e89 = $(`<div id="html_39b069aff31a51a11f4bdf6627808e89" style="width: 100.0%; height: 100.0%;">IP: 77.136.66.68<br>Location: Paris, France<br>Time: 2025-02-21T14:09:54.945Z</div>`)[0];
+                popup_80e4d0baef45a0cce6a2aa91e6e99222.setContent(html_39b069aff31a51a11f4bdf6627808e89);
+            
+        
+
+        marker_060623295140b3877131dea7790b9e00.bindPopup(popup_80e4d0baef45a0cce6a2aa91e6e99222)
+        ;
+
+        
+    
 </script>
 </html>

@@ -13,7 +13,8 @@
   "dependencies": {
     "axios": "latest",
     "express": "latest",
-    "sqlite3": "latest"
+    "sqlite3": "latest",
+    "useragent": "latest"
   },
   "devDependencies": {
     "nodemon": "latest"
