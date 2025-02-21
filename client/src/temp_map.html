@@ -25,7 +25,7 @@
             <meta name="viewport" content="width=device-width,
                 initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
             <style>
-                #map_94630f84e90434ad1445798c4c4a9ed9 {
+                #map_aa33aaedf7af7b3dbf803d09ad6891df {
                     position: relative;
                     width: 100.0%;
                     height: 100.0%;
@@ -39,14 +39,14 @@
 <body>
     
     
-            <div class="folium-map" id="map_94630f84e90434ad1445798c4c4a9ed9" ></div>
+            <div class="folium-map" id="map_aa33aaedf7af7b3dbf803d09ad6891df" ></div>
         
 </body>
 <script>
     
     
-            var map_94630f84e90434ad1445798c4c4a9ed9 = L.map(
-                "map_94630f84e90434ad1445798c4c4a9ed9",
+            var map_aa33aaedf7af7b3dbf803d09ad6891df = L.map(
+                "map_aa33aaedf7af7b3dbf803d09ad6891df",
                 {
                     center: [39.03, -77.5],
                     crs: L.CRS.EPSG3857,
@@ -63,7 +63,7 @@
 
         
     
-            var tile_layer_6b609702f0b71980997082e8bf8abc35 = L.tileLayer(
+            var tile_layer_57cffa08d109e003368a319ba6199925 = L.tileLayer(
                 "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
                 {
   "minZoom": 0,
@@ -80,7 +80,43 @@
             );
         
     
-            tile_layer_6b609702f0b71980997082e8bf8abc35.addTo(map_94630f84e90434ad1445798c4c4a9ed9);
+            tile_layer_57cffa08d109e003368a319ba6199925.addTo(map_aa33aaedf7af7b3dbf803d09ad6891df);
         
+    
+            var marker_c9b7756ac74ee8edddc6fb5ea9a2327d = L.marker(
+                [48.8558, 2.3494],
+                {
+}
+            ).addTo(map_aa33aaedf7af7b3dbf803d09ad6891df);
+        
+    
+            var icon_c8cac9aa3b221e587da582b680fa7855 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "info-sign",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+            marker_c9b7756ac74ee8edddc6fb5ea9a2327d.setIcon(icon_c8cac9aa3b221e587da582b680fa7855);
+        
+    
+        var popup_cdd48e2ca63e10337334e9405a68ac3b = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_2280b095edbe5ca797aa5f2a2827ee4f = $(`<div id="html_2280b095edbe5ca797aa5f2a2827ee4f" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; min-width: 200px;">             <h3 style="color: #2b2b2b; margin: 0 0 10px 0; border-bottom: 2px solid #4a90e2;">Visitor Details</h3>                          <div style="margin-bottom: 10px;">                 <strong style="color: #4a90e2;">📍 Location</strong><br>                 Paris, France<br>                 <span style="color: #666;">(48.8558, 2.3494)</span>             </div>              <div style="margin-bottom: 10px;">                 <strong style="color: #4a90e2;">🌐 Network</strong><br>                 IP: 77.136.66.68<br>                 ISP: Societe Francaise Du Radiotelephone - SFR SA<br>                 Organization: <br>                 AS: AS15557 Societe Francaise Du Radiotelephone - SFR SA             </div>              <div style="margin-bottom: 10px;">                 <strong style="color: #4a90e2;">💻 Device</strong><br>                 Browser: WhatsApp 2.2504.2<br>                 OS: Other 0.0.0<br>                 Device: Spider<br>                 Type: Mobile             </div>              <div style="margin-bottom: 5px;">                 <strong style="color: #4a90e2;">⏰ Other</strong><br>                 Time Zone: Europe/Paris<br>                 Visit Time: 21/02/2025 15:06:46             </div>         </div>         </div>`)[0];
+                popup_cdd48e2ca63e10337334e9405a68ac3b.setContent(html_2280b095edbe5ca797aa5f2a2827ee4f);
+            
+        
+
+        marker_c9b7756ac74ee8edddc6fb5ea9a2327d.bindPopup(popup_cdd48e2ca63e10337334e9405a68ac3b)
+        ;
+
+        
+    
 </script>
 </html>
